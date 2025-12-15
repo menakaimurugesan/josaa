@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>College & Branch Atlas | JoSAA + CSAB 2025</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" onerror="this.onerror=null;this.href='https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css';">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --card: rgba(255, 255, 255, 0.92);
+      --border: rgba(15, 23, 42, 0.08);
+      --accent: #f80303;
+      --accent-2: #fff9e6;
+      --shadow: 0 22px 60px rgba(15, 23, 42, 0.12);
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px at 18% 10%, rgba(30, 206, 241, 0.15), transparent 42%),
+        radial-gradient(1000px at 80% 0%, rgba(9, 176, 232, 0.14), transparent 45%),
+        linear-gradient(135deg, #f2f6f5 0%, #81f6de 100%);
+      min-height: 100vh;
+    }
+    .glass {
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: 1px solid #fecdd3;
+    }
+    .section-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .section-title::before {
+      content: '';
+      width: 28px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    }
+    .pill {
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #c2410c;
+      font-weight: 600;
+    }
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ef4444, #f59e0b);
+    }
+    .bar-filter {
+      position: relative;
+      width: 100%;
+      border-radius: 0.8rem;
+      border: 1px solid transparent;
+      background: transparent;
+      height: 26px;
+      min-height: 26px;
+      max-height: 26px;
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow: hidden;
+      font-weight: 600;
+      font-size: 0.85rem;
+      line-height: 26px;
+      transition: all 0.2s ease;
+      color: #0f172a;
+    }
+    .bar-filter:hover {
+      border-color: #cbd5e1;
+      background: transparent;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+    }
+    .bar-filter-active { background: transparent; }
+    .bar-filter-active-red {
+      background: transparent;
+      box-shadow: none;
+      color: #b91c1c;
+    }
+    .bar-filter-active-blue {
+      background: transparent;
+      box-shadow: none;
+      color: #1d4ed8;
+    }
+    .chart-bar {
+      height: 26px;
+      min-height: 26px;
+      max-height: 26px;
+    }
+    .bar-filter-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fecdd3, #fde68a);
+      opacity: 0.8;
+      width: 40%;
+      pointer-events: none;
+      height: 100%;
+    }
+    .bar-filter-label {
+      position: relative;
+      z-index: 1;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.85rem;
+      line-height: 28px;
+    }
+    .bar-filter-count {
+      position: relative;
+      z-index: 1;
+      margin-left: auto;
+      font-weight: 700;
+      color: #334155;
+      font-size: 0.85rem;
+      line-height: 28px;
+      white-space: nowrap;
+    }
+    .state-card {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .state-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+      border-color: #cbd5e1;
+    }
+    .stat-card {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    }
+    .stat-card-active {
+      border-color: #3b82f6;
+      box-shadow: 0 12px 30px rgba(59, 130, 246, 0.18);
+    }
+    .region-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+    }
+    .region-btn {
+      width: 100%;
+      min-height: 40px;
+      border-radius: 0.9rem;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.05rem;
+      padding: 0.20rem 0.25rem;
+      transition: all 0.2s ease;
+    }
+
+    .region-btn-active {
+      border-color: #a78bfa;
+      background: #a78bfa;
+      color: #312e81;
+      box-shadow: 0 10px 22px rgba(167, 139, 250, 0.2);
+    }
+    .region-btn-active .region-count {
+      color: #312e81;
+      font-weight: 800;
+    }
+    .region-count {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #475569;
+      margin: 0;
+    }
+    .table thead { background: #f8fafc; }
+    .table tbody tr:nth-child(odd) { background: #ffffff; }
+    .table tbody tr:nth-child(even) { background: #f8fafc; }
+  </style>
+</head>
+<body class="pb-14">
+  <div class="max-w-screen-2xl mx-auto px-6 py-6 space-y-4">
+
+    <div>
+      <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">College & Branch Atlas</h1>
+      <p class="text-slate-600 mt-2">Built from JoSAA 2025 counselling data, this atlas spotlights every participating college and branch, where they sit on the map, and how they stack up by type. Use it to explore geography, competitiveness, and the breadth of choices across rounds—an at-a-glance overview of the landscape before diving into detailed ranks and rounds.</p>
+    </div>
+
+    <section class="glass rounded-3xl p-4 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="section-title">Filters</div>
+        <button id="reset-filters-2" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-800 font-semibold hover:-translate-y-0.5 transition bg-white text-sm">Reset filters</button>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6 items-start" style="grid-template-columns: 0.5fr 0.85fr 1.65fr;align-items:stretch;">
+        <div class="flex flex-col justify-start h-full">
+          <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Multi-select region</div>
+          <div id="region-multi" class="region-grid mt-1"></div>
+        </div>
+        <div class="flex flex-col h-full">
+          <div class="flex items-center justify-between mb-1">
+            <div class="text-xs uppercase tracking-wide text-slate-500">Multi-select college type</div>
+            <label class="flex items-center gap-1 text-[11px] font-semibold text-blue-600 cursor-pointer">
+              <input id="type-select-all" type="checkbox" class="h-3 w-3 accent-blue-600">
+              <span>All</span>
+            </label>
+          </div>
+          <div id="type-multi" class="flex flex-col gap-0.5 overflow-auto pr-1 flex-1 max-h-40"></div>
+        </div>
+        <div class="h-full grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Multi-select state</div>
+              <label class="flex items-center gap-1 text-[11px] font-semibold text-blue-600 cursor-pointer">
+                <input id="state-select-all" type="checkbox" class="h-3 w-3 accent-blue-600">
+                <span>All</span>
+              </label>
+            </div>
+            <div id="state-multi" class="flex flex-col gap-0.5 overflow-auto pr-1 flex-1 rounded-xl max-h-40"></div>
+          </div>
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Multi-select city</div>
+              <label class="flex items-center gap-1 text-[11px] font-semibold text-blue-600 cursor-pointer">
+                <input id="city-select-all" type="checkbox" class="h-3 w-3 accent-blue-600">
+                <span>All</span>
+              </label>
+            </div>
+            <div id="city-multi" class="flex flex-col gap-0.5 overflow-auto pr-1 flex-1 rounded-xl max-h-40"></div>
+          </div>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        <div>
+          <label for="college-search-input" class="text-sm font-semibold text-slate-700">Search college</label>
+          <input id="college-search-input" type="text" class="w-full mt-1 rounded-xl border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-red-400" placeholder="Start typing…" />
+        </div>
+        <div>
+          <label for="program-search-input" class="text-sm font-semibold text-slate-700">Search branch</label>
+          <input id="program-search-input" type="text" class="w-full mt-1 rounded-xl border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-red-400" placeholder="Start typing…" />
+        </div>
+        <div>
+          <label for="city-search-input" class="text-sm font-semibold text-slate-700">Search city</label>
+          <input id="city-search-input" type="text" class="w-full mt-1 rounded-xl border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-red-400" placeholder="Start typing…" />
+        </div>
+      </div>
+    </section>
+
+    <section class="glass rounded-3xl p-6 space-y-6">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div id="card-colleges" class="p-4 rounded-2xl bg-white border border-slate-200 stat-card">
+          <div class="text-sm text-slate-600">Colleges</div>
+          <div id="stat-colleges" class="text-3xl font-bold text-slate-900">—</div>
+        </div>
+        <div id="card-programs" class="p-4 rounded-2xl bg-white border border-slate-200 stat-card">
+          <div class="text-sm text-slate-600">Branches</div>
+          <div id="stat-programs" class="text-3xl font-bold text-slate-900">—</div>
+        </div>
+        <div id="card-states" class="p-4 rounded-2xl bg-white border border-slate-200 stat-card">
+          <div class="text-sm text-slate-600">States</div>
+          <div id="stat-states" class="text-3xl font-bold text-slate-900">—</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 stat-card">
+          <div class="text-sm text-slate-600">Cities</div>
+          <div id="stat-cities" class="text-3xl font-bold text-slate-900">—</div>
+        </div>
+      </div>
+
+      <div id="section-programs" class="p-5 rounded-2xl bg-white border border-slate-200 space-y-3 hidden">
+        <div class="section-title">Branch directory</div>
+        <div id="top-programs" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <section id="section-colleges" class="glass rounded-3xl p-6 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="section-title">College directory</div>
+        <div class="text-xs text-slate-600">Grouped view of colleges with branch counts; click to expand.</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-3">
+        <div id="college-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <section id="section-states" class="glass rounded-3xl p-6 space-y-4 hidden">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="section-title">States directory</div>
+        <div class="text-xs text-slate-600">Expand a state to see its cities.</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-3">
+        <div id="state-list" class="space-y-2"></div>
+      </div>
+    </section>
+  </div>
+
+  <script id="embedded-data" type="application/json">[{"college":"Assam University, Silchar","state":"Assam","city":"Silchar","region":"North East","type":"University","programs":["Agricultural Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Atal Bihari Vajpayee Indian Institute of Information Technology & Management Gwalior","state":"Bihar","city":"Gwalior","region":"East","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Integrated B. Tech.(IT) and M. Tech (IT) (5 Years, Integrated B. Tech. and M. Tech.)","Integrated B. Tech.(IT) and M. Tech (IT) for DASA-CIWG (5 Years, Integrated B. Tech. and M. Tech.)","Integrated B. Tech.(IT) and MBA (5 Years, Integrated B. Tech. and MBA)","Integrated B. Tech.(IT) and MBA for DASA-CIWG (5 Years, Integrated B. Tech. and MBA)","Mathematics and Scientific Computing (4 Years, Bachelor of Technology)","Mathematics and Scientific Computing for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"Birla Institute of Technology, Deoghar Off-Campus","state":"Unknown","city":"Deoghar Off-Campus","region":"Unknown","type":"Other","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Birla Institute of Technology, Mesra, Ranchi","state":"Jharkhand","city":"Ranchi","region":"East","type":"Other","programs":["Architecture (5 Years, Bachelor of Architecture)","Artificial Intelligence and Machine Learning (4 Years, Bachelor of Technology)","Bio Technology (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Food Engineering and Technology (4 Years, Bachelor of Technology)","Mathematics and Computing (5 Years, Integrated Master of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Physics (5 Years, Integrated Master of Science)","Production and Industrial Engineering (4 Years, Bachelor of Technology)","Quantitative Economics & Data Science (5 Years, Integrated Master of Science)"]},{"college":"Birla Institute of Technology, Patna Off-Campus","state":"Unknown","city":"Patna Off-Campus","region":"Unknown","type":"Other","programs":["Artificial Intelligence and Machine Learning (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (5 Years, Integrated Master of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"CU Jharkhand","state":"Jharkhand","city":"Unknown","region":"East","type":"Other","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"Central University of Haryana","state":"Haryana","city":"Haryana","region":"North","type":"University","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Printing and Packaging Technology (4 Years, Bachelor of Technology)"]},{"college":"Central University of Jammu","state":"Jammu and Kashmir","city":"Jammu","region":"North","type":"University","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Cyber Security (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (Avionics) (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)"]},{"college":"Central University of Rajasthan, Rajasthan","state":"Rajasthan","city":"Rajasthan","region":"North","type":"University","programs":["Bio Medical Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Central institute of Technology Kokrajar, Assam","state":"Assam","city":"Assam","region":"North East","type":"Other","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Food Engineering and Technology (4 Years, Bachelor of Technology)","Instrumentation Engineering (4 Years, Bachelor of Technology)"]},{"college":"Chhattisgarh Swami Vivekanada Technical University, Bhilai (CSVTU Bhilai)","state":"Chhattisgarh","city":"Bhilai (CSVTU Bhilai)","region":"Central","type":"University","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science Engineering (Artificial Intelligence) (4 Years, B. Tech / B. Tech (Hons.))","Computer Science Engineering (Data Science) (4 Years, B. Tech / B. Tech (Hons.))"]},{"college":"Delhi Technological University, Delhi","state":"Delhi","city":"Delhi","region":"North","type":"University","programs":["Biotechnology for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Environmental Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Software Engineering for DASA- CIWG (4 Years, Bachelor of Technology)","Software Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"Dr. B R Ambedkar National Institute of Technology, Jalandhar","state":"Punjab","city":"Jalandhar","region":"North","type":"NIT","programs":["Bio Technology (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Data Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and VLSI Engineering (4 Years, Bachelor of Technology)","Industrial and Production Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Instrumentation and Control Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Textile Technology (4 Years, Bachelor of Technology)"]},{"college":"Gati Shakti Vishwavidyalaya, Vadodara","state":"Unknown","city":"Vadodara","region":"Unknown","type":"Other","programs":["B.Tech in Artificial Intelligenece and Data Science (Transportation and Logistics) (4 Years, Bachelor of Technology)","B.Tech in Aviation Engineering (4 Years, Bachelor of Technology)","B.Tech in Civil Engineering (Rail Engineering) (4 Years, Bachelor of Technology)","B.Tech in Electrical Engineering ( Rail Engineering) (4 Years, Bachelor of Technology)","B.Tech in Electronics & Communication Engineering (Rail Engineering) (4 Years, Bachelor of Technology)","B.Tech in Mechanical Engineering ( Rail Engineering) (4 Years, Bachelor of Technology)"]},{"college":"Gautam Buddha University, Greater Noida","state":"Unknown","city":"Greater Noida","region":"Unknown","type":"University","programs":["Integrated B. Tech. - M. Tech in Computer Science & Engineering for DASA-CIWG (5 Years, Integrated B. Tech. and M. Tech.)"]},{"college":"Ghani Khan Choudhary Institute of Engineering and Technology, Malda, West Bengal","state":"West Bengal","city":"West Bengal","region":"East","type":"Engineering Institute","programs":["Civil and Environmental Engineering (4 Years, Bachelor of Technology)","Computer Science Engineering (Artificial lntelligence and Machine Learning) (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Food Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Gurukula Kangri Vishwavidyalaya, Haridwar","state":"Unknown","city":"Haridwar","region":"Unknown","type":"Other","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"INDIAN INSTITUTE OF INFORMATION TECHNOLOGY SENAPATI MANIPUR","state":"Manipur","city":"MANIPUR","region":"North East","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Cyber Security (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Quantum Technologies (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering with specialization in VLSI and Embedded Systems (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Carpet Technology, Bhadohi","state":"Unknown","city":"Bhadohi","region":"Unknown","type":"Other","programs":["Carpet and Textile Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Engineering Science and Technology, Shibpur","state":"Unknown","city":"Shibpur","region":"Unknown","type":"Engineering Institute","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Aerospace Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Aerospace Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Architecture (5 Years, Bachelor of Architecture)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Telecommunication Engineering (4 Years, Bachelor of Technology)","Electronics and Telecommunication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Telecommunication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgy and Materials Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Handloom Technology(IIHT), Varanasi","state":"Uttar Pradesh","city":"Varanasi","region":"North","type":"Other","programs":["Handloom and Textile Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Handloom Technology, Salem","state":"Unknown","city":"Salem","region":"Unknown","type":"Other","programs":["Handloom and Textile Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology (IIIT) Nagpur","state":"Maharashtra","city":"Nagpur","region":"West","type":"IIIT","programs":["Computer Science Engineering (Artificial lntelligence and Machine Learning) (4 Years, Bachelor of Technology)","Computer Science Engineering (Data Science and Analytics) (4 Years, Bachelor of Technology)","Computer Science Engineering (Human Computer lnteraction and Gaming Technology) (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (Internet of Things) (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology (IIIT) Pune","state":"Maharashtra","city":"Pune","region":"West","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology (IIIT) Ranchi","state":"Jharkhand","city":"Ranchi","region":"East","type":"IIIT","programs":["B.Tech in Mathematics and Computing (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (with Specialization of Data Science and Artificial Intelligence) (4 Years, B. Tech / B. Tech (Hons.))","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (with Specialization of Embedded Systems and Internet of Things) (4 Years, B. Tech / B. Tech (Hons.))"]},{"college":"Indian Institute of Information Technology (IIIT), Sri City, Chittoor","state":"Andhra Pradesh","city":"Chittoor","region":"South","type":"IIIT","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology (IIIT)Kota, Rajasthan","state":"Rajasthan","city":"Rajasthan","region":"North","type":"IIIT","programs":["Artificial Intelligence and Data Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Bhagalpur","state":"Bihar","city":"Bhagalpur","region":"East","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechatronics and Automation Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Bhopal","state":"Madhya Pradesh","city":"Bhopal","region":"Central","type":"IIIT","programs":["B.Tech in Mathematics and Computing (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (Artificial Intelligence) (4 Years, Bachelor of Technology)","Computer Science and Engineering (Cyber Physical System) (4 Years, Bachelor of Technology)","Computer Science and Engineering (Cyber Security) (4 Years, Bachelor of Technology)","Computer Science and Engineering (Data Science) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Physics and Computational Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Design & Manufacturing Kurnool, Andhra Pradesh","state":"Andhra Pradesh","city":"Andhra Pradesh","region":"South","type":"IIIT","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics and Communication Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics and Communication Engineering with specialization in Design and Manufacturing (4 Years, Bachelor of Technology)","Mechanical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechanical Engineering with specialization in Design and Manufacturing (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Guwahati","state":"Assam","city":"Guwahati","region":"North East","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Lucknow","state":"Uttar Pradesh","city":"Lucknow","region":"North","type":"IIIT","programs":["Computer Science (4 Years, Bachelor of Technology)","Computer Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Computer Science and Business (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Surat","state":"Gujarat","city":"Surat","region":"West","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (Artificial Intelligence and Machine Learning) (4 Years, Bachelor of Technology)","Computer Science and Engineering (Cyber Security) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology Tiruchirappalli","state":"Tamil Nadu","city":"Tiruchirappalli","region":"South","type":"IIIT","programs":["Computer Science and Engineering ( Artificial Intelligence & Data Science) (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (VLSI Design) (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT) Dharwad","state":"Karnataka","city":"Dharwad","region":"South","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT) Kalyani, West Bengal","state":"West Bengal","city":"West Bengal","region":"East","type":"IIIT","programs":["Computer Science and Engineering ( Artificial Intelligence & Data Science) (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (Cyber Security) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT) Kilohrad, Sonepat, Haryana","state":"Haryana","city":"Haryana","region":"North","type":"IIIT","programs":["CSE ( Data Science & Analytics) (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT) Kottayam","state":"Unknown","city":"Kottayam","region":"Unknown","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Artificial Intelligence and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Artificial Intelligence and Data Science for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Cyber Security (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Cyber Security for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with specialization in Cyber Security for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT) Una, Himachal Pradesh","state":"Himachal Pradesh","city":"Himachal Pradesh","region":"North","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (Cyber Security) (4 Years, Bachelor of Technology)","Computer Science and Engineering (Data Science) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology(IIIT), Vadodara, Gujrat","state":"Unknown","city":"Gujrat","region":"Unknown","type":"IIIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology, Agartala","state":"Tripura","city":"Agartala","region":"North East","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology, Allahabad","state":"Uttar Pradesh","city":"Allahabad","region":"North","type":"IIIT","programs":["Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-Non CIWG (4 Years, Bachelor of Technology)","Information Technology-Business Informatics (4 Years, Bachelor of Technology)","Information Technology-Business Informatics for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology-Business Informatics for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology, Design & Manufacturing, Kancheepuram","state":"Tamil Nadu","city":"Kancheepuram","region":"South","type":"IIIT","programs":["B.Tech in Mechanical Engineering and M.Tech in AI and Robotics (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B.Tech. in Electronics and Communication Engineering and M.Tech. in Communication Systems (5 Years, Bachelor and Master of Technology (Dual Degree))","B.Tech. in Electronics and Communication Engineering and M.Tech. in Communication Systems for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","B.Tech. in Electronics and Communication Engineering and M.Tech. in Microelectronics and VLSI Systems (5 Years, Bachelor and Master of Technology (Dual Degree))","B.Tech. in Electronics and Communication Engineering and M.Tech. in Microelectronics and VLSI Systems for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with Major in Artificial Intelligence (4 Years, Bachelor of Technology)","Computer Science and Engineering with Major in Artificial Intelligence for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with Major in Artificial Intelligence for DASA-Non CIWG (4 Years, Bachelor of Technology)","Design Engineering (4 Years, Bachelor of Technology)","Design Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Smart Manufacturing (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Information Technology, Vadodara International Campus Diu (IIITVICD)","state":"Unknown","city":"Vadodara International Campus Diu (IIITVICD)","region":"Unknown","type":"IIIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology (BHU) Varanasi","state":"Uttar Pradesh","city":"Varanasi","region":"North","type":"IIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Biochemical Engineering (4 Years, Bachelor of Technology)","Bioengineering (4 Years, Bachelor of Technology)","Ceramic Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Industrial Chemistry (4 Years, Bachelor of Technology)","Materials Science and Technology (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)","Pharmaceutical Engineering & Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology (ISM) Dhanbad","state":"Jharkhand","city":"Dhanbad","region":"East","type":"IIT","programs":["Applied Geology (5 Years, Integrated Master of Technology)","Applied Geophysics (5 Years, Integrated Master of Technology)","B.Tech Mining Engineering and MBA in Logistic and Supply Chain Management (IIM Mumbai) (5 Years, Integrated B. Tech. and MBA)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Science (5 Years, Integrated Bachelor of Science-Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Environmental Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mineral and Metallurgical Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)","Mining Machinery Engineering (4 Years, Bachelor of Technology)","Petroleum Engineering (4 Years, Bachelor of Technology)","Physical Science (5 Years, Integrated Bachelor of Science-Master of Science)"]},{"college":"Indian Institute of Technology Bhilai","state":"Chhattisgarh","city":"Bhilai","region":"Central","type":"IIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Materials Science and Metallurgical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechatronics Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Bhubaneswar","state":"Odisha","city":"Bhubaneswar","region":"East","type":"IIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Bombay","state":"Maharashtra","city":"Bombay","region":"West","type":"IIT","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Applied Geophysics (4 Years, Bachelor of Science)","BS in Mathematics (4 Years, Bachelor of Science)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry (4 Years, Bachelor of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Economics (4 Years, Bachelor of Science)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Energy Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Environmental Science and Engineering (4 Years, Bachelor of Technology)","Industrial Engineering and Operations Research (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical Engineering and Materials Science (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Delhi","state":"Delhi","city":"Delhi","region":"North","type":"IIT","programs":["Abu Dhabi Campus - Chemical Engineering (4 Years, Bachelor of Technology)","Abu Dhabi Campus - Computer Science and Engineering (4 Years, Bachelor of Technology)","Abu Dhabi Campus - Energy Engineering (4 Years, Bachelor of Technology)","Biotechnology and Biochemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemistry (4 Years, Bachelor of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Design (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (Power and Automation) (4 Years, Bachelor of Technology)","Energy Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Engineering and Computational Mechanics (4 Years, Bachelor of Technology)","Materials Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mathematics and Computing (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechanical Engineering (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)","Textile Technology (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Dharwad","state":"Karnataka","city":"Dharwad","region":"South","type":"IIT","programs":["Chemical and Biochemical Engineering (4 Years, Bachelor of Technology)","Civil and Infrastructure Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Interdisciplinary Sciences (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Gandhinagar","state":"Gujarat","city":"Gandhinagar","region":"West","type":"IIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Integrated Circuit Design & Technology (4 Years, Bachelor of Technology)","Materials Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Goa","state":"Goa","city":"Goa","region":"West","type":"IIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Guwahati","state":"Assam","city":"Guwahati","region":"North East","type":"IIT","programs":["Biosciences and Bioengineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Science and Technology (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Electrical Engineering (4 Years, Bachelor of Technology)","Energy Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Hyderabad","state":"Telangana","city":"Hyderabad","region":"South","type":"IIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Biomedical Engineering (4 Years, Bachelor of Technology)","Biotechnology and Bioinformatics (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computational Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (IC Design and Technology) (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Engineering Science (4 Years, Bachelor of Technology)","Industrial Chemistry (4 Years, Bachelor of Technology)","Materials Science and Metallurgical Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Indore","state":"Madhya Pradesh","city":"Indore","region":"Central","type":"IIT","programs":["Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical Engineering and Materials Science (4 Years, Bachelor of Technology)","Space Science and Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Jammu","state":"Jammu and Kashmir","city":"Jammu","region":"North","type":"IIT","programs":["Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Materials Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Jodhpur","state":"Rajasthan","city":"Jodhpur","region":"North","type":"IIT","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Bio Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry with Specialization (4 Years, Bachelor of Science)","Civil and Infrastructure Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics Engineering (4 Years, Bachelor of Technology)","Materials Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Physics with Specialization (4 Years, Bachelor of Science)"]},{"college":"Indian Institute of Technology Kanpur","state":"Uttar Pradesh","city":"Kanpur","region":"North","type":"IIT","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Biological Sciences and Bioengineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry (4 Years, Bachelor of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Earth Sciences (4 Years, Bachelor of Science)","Economics (4 Years, Bachelor of Science)","Electrical Engineering (4 Years, Bachelor of Technology)","Materials Science and Engineering (4 Years, Bachelor of Technology)","Mathematics and Scientific Computing (4 Years, Bachelor of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Physics (4 Years, Bachelor of Science)","Statistics and Data Science (4 Years, Bachelor of Science)"]},{"college":"Indian Institute of Technology Kharagpur","state":"West Bengal","city":"Kharagpur","region":"East","type":"IIT","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Agricultural and Food Engineering (4 Years, Bachelor of Technology)","Applied Geology (4 Years, Bachelor of Science)","Architecture (5 Years, Bachelor of Architecture)","Artificial Intelligence (4 Years, Bachelor of Technology)","Biotechnology and Biochemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry (4 Years, Bachelor of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Economics (4 Years, Bachelor of Science)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Electrical Communication Engineering (4 Years, Bachelor of Technology)","Exploration Geophysics (4 Years, Bachelor of Science)","Industrial and Systems Engineering (4 Years, Bachelor of Technology)","Instrumentation Engineering (4 Years, Bachelor of Technology)","Manufacturing Science and Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)","Ocean Engineering and Naval Architecture (4 Years, Bachelor of Technology)","Physics (4 Years, Bachelor of Science)"]},{"college":"Indian Institute of Technology Madras","state":"Tamil Nadu","city":"Madras","region":"South","type":"IIT","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Aerospace Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Artificial Intelligence and Data Analytics (4 Years, Bachelor of Technology)","Biological Engineering (4 Years, Bachelor of Technology)","Biological Science (4 Years, Bachelor of Science)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computational Engineering and Mechanics (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Engineering Design (5 Years, Bachelor and Master of Technology (Dual Degree))","Engineering Physics (4 Years, Bachelor of Technology)","Instrumentation and Biomedical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Naval Architecture and Ocean Engineering (4 Years, Bachelor of Technology)","Physics (4 Years, Bachelor of Science)"]},{"college":"Indian Institute of Technology Mandi","state":"Himachal Pradesh","city":"Mandi","region":"North","type":"IIT","programs":["B.Tech in General Engineering (4 Years, Bachelor of Technology)","B.Tech in Materials Science and Engineering (4 Years, Bachelor of Technology)","B.Tech in Mathematics and Computing (4 Years, Bachelor of Technology)","B.Tech in Microelectronics & VLSI (4 Years, Bachelor of Technology)","BS in Chemical Sciences (4 Years, Bachelor of Science)","Bio Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Palakkad","state":"Kerala","city":"Palakkad","region":"South","type":"IIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Patna","state":"Bihar","city":"Patna","region":"East","type":"IIT","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","B. Tech in CE. - M. Tech. in Geotechnical Engineering (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech in CE. - M. Tech. in Structural Engineering (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech. (CSE) and M.Tech in CSE (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech. (ECE) -M. Tech. in VLSI (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech. (EEE)-M. Tech. in (Power &. Control) (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech. (ME) - M. Tech. in Mechatronics (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B. Tech. (Mathematics & Computing) M. Tech. in (Mathematics & Computing) (5 Years, B.Tech. + M.Tech./MS (Dual Degree))","B.Tech (Artificial Intelligence and Data Science) - MBA in Digital Business Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Chemical Engineering) - MBA in Hospital and Health Care Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Chemical Science and Technology) - MBA in Hospital and Health Care Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Civil Engineering) - MBA (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Computer Science and Engineering) - MBA in Digital Business Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Electrical and Electronics Engineering) - MBA (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Electronics and Communication Engineering) - MBA in Hospital and Healthcare Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Engineering Physics) - MBA (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Mathematics and Computing) - MBA in Digital Business Management (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Mechanical Engineering) - MBA (IIM Mumbai) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech (Metallurgical and Materials Engineering) - MBA (IIM Bodh Gaya) (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. in Electronics and Communication Engineering and M.Tech. in Communication Systems (5 Years, Bachelor and Master of Technology (Dual Degree))","BS in Economics with MBA (IIM Bodh Gaya) (5 Years, Bachelor of Science and MBA (Dual Degree))","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Science and Technology (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Economics (4 Years, Bachelor of Science)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Roorkee","state":"Uttarakhand","city":"Roorkee","region":"North","type":"IIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Biosciences and Bioengineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Sciences (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Economics (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Energy Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Geological Technology (5 Years, Integrated Master of Technology)","Geophysical Technology (5 Years, Integrated Master of Technology)","Mathematics & Computing (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Physics (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Production and Industrial Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Ropar","state":"Punjab","city":"Ropar","region":"North","type":"IIT","programs":["Artificial Intelligence and Data Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Digital Agriculture (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (Integrated Circuit Design and Technology) (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Institute of Technology Tirupati","state":"Andhra Pradesh","city":"Tirupati","region":"South","type":"IIT","programs":["Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Indian Maritime University - Visakhapatnam Campus","state":"Unknown","city":"Campus","region":"Unknown","type":"University","programs":["Naval Architecture and Ocean Engineering for DASA- CIWG (4 Years, Bachelor of Technology)"]},{"college":"Indian institute of information technology, Raichur, Karnataka","state":"Karnataka","city":"Karnataka","region":"South","type":"IIIT","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)"]},{"college":"Indira Gandhi Delhi Technical University for Women, New Delhi","state":"Delhi","city":"New Delhi","region":"North","type":"University","programs":["Artificial Intelligence and Machine Learning for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Artificial Intelligence for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"Institute of Chemical Technology, Mumbai: Indian Oil Odisha Campus, Bhubaneswar","state":"Odisha","city":"Bhubaneswar","region":"East","type":"Other","programs":["Chemical Engineering (5 Years, Integrated Masters in Technology)"]},{"college":"Institute of Engineering and Technology, Dr. H. S. Gour University. Sagar (A Central University)","state":"Unknown","city":"Dr. H. S. Gour University. Sagar (A Central University)","region":"Unknown","type":"Engineering Institute","programs":["Aeronautical Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Dairy Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Fashion and Apparel Engineering (4 Years, Bachelor of Technology)","Food Engineering and Technology (4 Years, Bachelor of Technology)"]},{"college":"Institute of Infrastructure, Technology, Research and Management-Ahmedabad","state":"Unknown","city":"Research and Management-Ahmedabad","region":"Unknown","type":"Other","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"International Institute of Information Technology, Bhubaneswar","state":"Odisha","city":"Bhubaneswar","region":"East","type":"Other","programs":["Computer Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Telecommunication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"International Institute of Information Technology, Naya Raipur","state":"Chhattisgarh","city":"Naya Raipur","region":"Central","type":"Other","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Data Science and Artificial Intelligence (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Islamic University of Science and Technology Kashmir","state":"Unknown","city":"Kashmir","region":"Unknown","type":"University","programs":["Architecture (5 Years, Bachelor of Architecture)"]},{"college":"J.K. Institute of Applied Physics & Technology, Department of Electronics & Communication, University of Allahabad- Allahabad","state":"Unknown","city":"University of Allahabad- Allahabad","region":"Unknown","type":"University","programs":["Computer Science and Engineering with Major in Artificial Intelligence (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Jawaharlal Nehru University, Delhi","state":"Delhi","city":"Delhi","region":"North","type":"University","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)"]},{"college":"Malaviya National Institute of Technology Jaipur","state":"Rajasthan","city":"Jaipur","region":"North","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture and Planning for DASA-CIWG (5 Years, Bachelor of Architecture)","Artificial Intelligence and Data Engineering (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"Manipal Institute of Technology, Manipal","state":"Unknown","city":"Manipal","region":"Unknown","type":"Other","programs":["Aeronautical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Biomedical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Biotechnology for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Financial Technology for DASA- CIWG (4 Years, Bachelor of Technology)","Cyber Physical Systems for DASA- CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechatronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"Maulana Azad National Institute of Technology Bhopal","state":"Madhya Pradesh","city":"Bhopal","region":"Central","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","B. Tech. and M. Tech. in Engineering and Computational Mechanics (Dual Degree) (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Energy and Electrical Vehicle Engineering (4 Years, Bachelor of Technology)","Materials Science and Metallurgical Engineering (4 Years, Bachelor of Technology)","Mathematics and Data Science (5 Years, Bachelor and Master of Technology (Dual Degree))","Mathematics and Data Science for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechanical Engineering (4 Years, Bachelor of Technology)","Planning (4 Years, Bachelor of Planning)"]},{"college":"Mizoram University, Aizawl","state":"Mizoram","city":"Aizawl","region":"North East","type":"University","programs":["Architecture (5 Years, Bachelor of Architecture)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"Motilal Nehru National Institute of Technology Allahabad","state":"Uttar Pradesh","city":"Allahabad","region":"North","type":"NIT","programs":["Bio Technology (4 Years, Bachelor of Technology)","Biotechnology for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Engineering and Computational Mechanics (4 Years, Bachelor of Technology)","Engineering and Computational Mechanics for DASA-CIWG (4 Years, Bachelor of Technology)","Materials Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Advanced Manufacturing Technology, Ranchi","state":"Jharkhand","city":"Ranchi","region":"East","type":"Other","programs":["Computer Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgy and Materials Engineering (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Electronics and Information Technology, Ajmer (Rajasthan)","state":"Rajasthan","city":"Ajmer (Rajasthan)","region":"North","type":"Other","programs":["Computer Science and Engineering (Internet of Things, Cyber Security including Block Chain Technology ) (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Electronics and Information Technology, Aurangabad (Maharashtra)","state":"Maharashtra","city":"Aurangabad (Maharashtra)","region":"West","type":"Other","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Electronic Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Electronics and Information Technology, Gorakhpur (UP)","state":"Unknown","city":"Gorakhpur (UP)","region":"Unknown","type":"Other","programs":["B. Tech in Electronics and Communication Engineering with minor in Wearable Electronics (4 Years, Bachelor of Technology)","Computer Science and Engineering with minor in AI and ML (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Electronics and Information Technology, Patna (Bihar)","state":"Bihar","city":"Patna (Bihar)","region":"East","type":"Other","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Electronics and Information Technology, Ropar (Punjab)","state":"Punjab","city":"Ropar (Punjab)","region":"North","type":"Other","programs":["B.Tech in CSE (AI and ML) (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Food Technology Entrepreneurship and Management, Kundli","state":"Unknown","city":"Kundli","region":"Unknown","type":"Other","programs":["Food Technology and Management (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Food Technology Entrepreneurship and Management, Thanjavur","state":"Tamil Nadu","city":"Thanjavur","region":"South","type":"Other","programs":["Food Technology (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Agartala","state":"Tripura","city":"Agartala","region":"North East","type":"NIT","programs":["Biotechnology and Biochemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Civil Engineering (4 Years, Bachelor of Technology)","Computational Mathematics (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Engineering Physics (5 Years, Bachelor and Master of Technology (Dual Degree))","Mathematics & Computing (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Mechanical Engineering (4 Years, Bachelor of Technology)","Physics (5 Years, Bachelor of Science and Master of Science (Dual Degree))","Production Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Arunachal Pradesh","state":"Arunachal Pradesh","city":"Pradesh","region":"North East","type":"NIT","programs":["Biosciences and Bioengineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Calicut","state":"Kerala","city":"Calicut","region":"South","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Architecture for DASA-Non CIWG (5 Years, Bachelor of Architecture)","Bio Technology (4 Years, Bachelor of Technology)","Biotechnology for DASA- Non CIWG (4 Years, Bachelor of Technology)","Biotechnology for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Energy Engineering (4 Years, Bachelor of Technology)","Energy Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Energy Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Engineering Physics for DASA-CIWG (4 Years, Bachelor of Technology)","Engineering Physics for DASA-Non CIWG (4 Years, Bachelor of Technology)","Materials Science and Engineering (4 Years, Bachelor of Technology)","Materials Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Production Engineering (4 Years, Bachelor of Technology)","Production Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Production Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Delhi","state":"Delhi","city":"Delhi","region":"North","type":"NIT","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Aerospace Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Aerospace Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-Non CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","VLSI Design and Technology (4 Years, Bachelor of Technology)","VLSI Design and Technology for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Durgapur","state":"West Bengal","city":"Durgapur","region":"East","type":"NIT","programs":["B.Tech in Mathematics and Computing (4 Years, Bachelor of Technology)","Bio Technology (4 Years, Bachelor of Technology)","Biotechnology (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemistry (5 Years, Integrated Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Goa","state":"Goa","city":"Goa","region":"West","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Hamirpur","state":"Himachal Pradesh","city":"Hamirpur","region":"North","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Engineering Physics (4 Years, Bachelor of Technology)","Materials Science and Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Karnataka, Surathkal","state":"Karnataka","city":"Surathkal","region":"South","type":"NIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Artificial Intelligence for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence for DASA-Non CIWG (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computational and Data Science (4 Years, Bachelor of Technology)","Computational and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Computational and Data Science for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)","Mining Engineering for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Meghalaya","state":"Meghalaya","city":"Meghalaya","region":"North East","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Nagaland","state":"Nagaland","city":"Nagaland","region":"North East","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Patna","state":"Bihar","city":"Patna","region":"East","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Technology (5 Years, Bachelor and Master of Technology (Dual Degree))","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering with Specialization in Construction Technology and Management (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering with Specialization in Cyber Security (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering with Specialization in Cyber Security for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering with Specialization in Data Science (5 Years, Bachelor and Master of Technology (Dual Degree))","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering with Specialization In Power System Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics Engineering (VLSI Design and Technology) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering with Specialization in Microelectronics and VLSI System Design (5 Years, Bachelor and Master of Technology (Dual Degree))","Material Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Mathematics and Computing Technology (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering with Specialization in Manufacturing and Industrial Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechatronics and Automation Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Puducherry","state":"Puducherry","city":"Puducherry","region":"South","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Raipur","state":"Chhattisgarh","city":"Raipur","region":"Central","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Bio Medical Engineering (4 Years, Bachelor of Technology)","Bio Technology (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology Sikkim","state":"Sikkim","city":"Sikkim","region":"North East","type":"NIT","programs":["Artificial Intelligence and Machine Learning (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Andhra Pradesh","state":"Andhra Pradesh","city":"Andhra Pradesh","region":"South","type":"NIT","programs":["Bio Technology (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Jamshedpur","state":"Jharkhand","city":"Jamshedpur","region":"East","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Engineering and Computational Mechanics (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Kurukshetra","state":"Haryana","city":"Kurukshetra","region":"North","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science for DASA-Non CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Machine Learning (4 Years, Bachelor of Technology)","Artificial Intelligence and Machine Learning for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence and Machine Learning for DASA-Non CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electrical Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Industrial Internet of Things (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Microelectronics & VLSI Engineering (4 Years, Bachelor of Technology)","Microelectronics & VLSI Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)","ROBOTICS & AUTOMATION (4 Years, Bachelor of Technology)","SUSTAINABLE ENERGY TECHNOLOGIES (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Manipur","state":"Manipur","city":"Manipur","region":"North East","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Mizoram","state":"Mizoram","city":"Mizoram","region":"North East","type":"NIT","programs":["Chemical Science and Technology (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Rourkela","state":"Odisha","city":"Rourkela","region":"East","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Artificial Intelligence (4 Years, Bachelor of Technology)","Artificial Intelligence for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence for DASA-Non CIWG (4 Years, Bachelor of Technology)","Bio Medical Engineering (4 Years, Bachelor of Technology)","Bio Medical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Bio Medical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Bio Technology (4 Years, Bachelor of Technology)","Bio Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Ceramic Engineering (4 Years, Bachelor of Technology)","Ceramic Engineering and M.Tech Industrial Ceramic (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Chemistry (5 Years, Integrated Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Food Process Engineering (4 Years, Bachelor of Technology)","Industrial Design (4 Years, Bachelor of Technology)","Industrial Design for DASA-CIWG (4 Years, Bachelor of Technology)","Life Science (5 Years, Integrated Master of Science)","Mathematics (5 Years, Integrated Master of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Mining Engineering (4 Years, Bachelor of Technology)","Mining Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Physics (5 Years, Integrated Master of Science)","Physics for DASA-CIWG (5 Years, Integrated Master of Science)"]},{"college":"National Institute of Technology, Silchar","state":"Assam","city":"Silchar","region":"North East","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Srinagar","state":"Jammu and Kashmir","city":"Srinagar","region":"North","type":"NIT","programs":["Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Tiruchirappalli","state":"Tamil Nadu","city":"Tiruchirappalli","region":"South","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Architecture for DASA-Non CIWG (5 Years, Bachelor of Architecture)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Instrumentation and Control Engineering (4 Years, Bachelor of Technology)","Instrumentation and Control Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Instrumentation and Control Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Production Engineering (4 Years, Bachelor of Technology)","Production Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Production Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Uttarakhand","state":"Uttarakhand","city":"Uttarakhand","region":"North","type":"NIT","programs":["Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"National Institute of Technology, Warangal","state":"Unknown","city":"Warangal","region":"Unknown","type":"NIT","programs":["Bio Technology (4 Years, Bachelor of Technology)","Bio Technology for DASA-CIWG (4 Years, Bachelor of Technology)","Bio Technology for DASA-Non CIWG (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-Non CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Chemistry (5 Years, Integrated Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering ( Artificial Intelligence & Data Science) (4 Years, Bachelor of Technology)","Computer Science and Engineering ( Artificial Intelligence & Data Science) for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering ( Artificial Intelligence & Data Science) for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (VLSI Design and Technology) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (VLSI Design and Technology) for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (VLSI Design and Technology) for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mathematics (5 Years, Integrated Master of Science)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mathematics for DASA-CIWG (5 Years, Integrated Master of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Metallurgical and Materials Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Physics (5 Years, Integrated Master of Science)"]},{"college":"Netaji Subhas University of Technology, Delhi","state":"Delhi","city":"Delhi","region":"North","type":"University","programs":["Computer Science and Engineering (Artificial Intelligence) for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (Artificial Intelligence) for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (Data Science) for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (Data Science) for DASA-Non CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Information Technology for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"North Eastern Regional Institute of Science and Technology, Nirjuli-791109 (Itanagar),Arunachal Pradesh","state":"Arunachal Pradesh","city":"Arunachal Pradesh","region":"North East","type":"Other","programs":["Agricultural Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"North-Eastern Hill University, Shillong","state":"Unknown","city":"Shillong","region":"Unknown","type":"University","programs":["Biomedical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Energy Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)"]},{"college":"Pandit Deendayal Energy University, Gandhinagar","state":"Gujarat","city":"Gandhinagar","region":"West","type":"University","programs":["Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)"]},{"college":"Pt. Dwarka Prasad Mishra Indian Institute of Information Technology, Design & Manufacture Jabalpur","state":"Unknown","city":"Design & Manufacture Jabalpur","region":"Unknown","type":"IIIT","programs":["Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Smart Manufacturing (4 Years, Bachelor of Technology)"]},{"college":"Puducherry Technological University, Puducherry","state":"Puducherry","city":"Puducherry","region":"South","type":"University","programs":["Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechatronics Engineering (4 Years, Bachelor of Technology)"]},{"college":"Punjab Engineering College, Chandigarh","state":"Punjab","city":"Chandigarh","region":"North","type":"Other","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science Engineering (Artificial Intelligence) (4 Years, B. Tech / B. Tech (Hons.))","Computer Science Engineering (Data Science) (4 Years, B. Tech / B. Tech (Hons.))","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (Data Science) for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics Engineering (VLSI Design and Technology) (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Production and Industrial Engineering (4 Years, Bachelor of Technology)"]},{"college":"Rajiv Gandhi National Aviation University, Fursatganj, Amethi (UP)","state":"Unknown","city":"Amethi (UP)","region":"Unknown","type":"University","programs":["Aerospace Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (Avionics) (4 Years, Bachelor of Technology)"]},{"college":"Sant Longowal Institute of Engineering and Technology","state":"Unknown","city":"Technology","region":"Unknown","type":"Engineering Institute","programs":["Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemistry (5 Years, Integrated Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Food Technology (4 Years, Bachelor of Technology)","Instrumentation and Control Engineering (4 Years, Bachelor of Technology)","Mathematics (5 Years, Integrated Master of Science)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Physics (5 Years, Integrated Master of Science)"]},{"college":"Sardar Vallabhbhai National Institute of Technology, Surat","state":"Gujarat","city":"Surat","region":"West","type":"NIT","programs":["Artificial Intelligence (4 Years, Bachelor of Technology)","Artificial Intelligence (5 Years, Integrated B. Tech. and M. Tech.)","Artificial Intelligence for DASA-CIWG (4 Years, Bachelor of Technology)","Artificial Intelligence for DASA-CIWG (5 Years, Integrated B. Tech. and M. Tech.)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Chemistry (5 Years, Integrated Master of Science)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electrical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and VLSI Engineering (4 Years, Bachelor of Technology)","Electronics and VLSI Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and VLSI Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Engineering Physics (4 Years, Bachelor of Technology)","Industrial Chemistry (4 Years, Bachelor of Technology)","Mathematics (5 Years, Integrated Master of Science)","Mathematics and Computing (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-CIWG (4 Years, Bachelor of Technology)","Mathematics and Computing for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Physics (5 Years, Integrated Master of Science)"]},{"college":"School of Engineering, Tezpur University, Napaam, Tezpur","state":"Unknown","city":"Tezpur","region":"Unknown","type":"University","programs":["B.Tech. (Civil Engineering) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. (Computer Science and Engineering) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. (Elctrical Engineering) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. (Electronics and Communication Engineering) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. (Food Engineering and Technology) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","B.Tech. (Mechanical Engineering) - MBA (5 Years, Bachelor of Technology and MBA (Dual Degree))","Bachelor of Design (4 Years, Bachelor of Design)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Food Engineering and Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"School of Planning & Architecture, Bhopal","state":"Madhya Pradesh","city":"Bhopal","region":"Central","type":"Other","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Planning (4 Years, Bachelor of Planning)"]},{"college":"School of Planning & Architecture, New Delhi","state":"Delhi","city":"New Delhi","region":"North","type":"Other","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Architecture for DASA-Non CIWG (5 Years, Bachelor of Architecture)","Planning (4 Years, Bachelor of Planning)","Planning for DASA-CIWG (4 Years, Bachelor of Planning)"]},{"college":"School of Planning & Architecture: Vijayawada","state":"Andhra Pradesh","city":"Vijayawada","region":"South","type":"Other","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Architecture for DASA-Non CIWG (5 Years, Bachelor of Architecture)","Planning (4 Years, Bachelor of Planning)","Planning for DASA-CIWG (4 Years, Bachelor of Planning)"]},{"college":"School of Studies of Engineering and Technology, Guru Ghasidas Vishwavidyalaya, Bilaspur","state":"Unknown","city":"Bilaspur","region":"Unknown","type":"Other","programs":["Animation and VFX (4 Years, Bachelor of Technology)","Artificial Intelligence and Data Science (4 Years, Bachelor of Technology)","Chemical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Industrial and Production Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Shri G. S. Institute of Technology and Science Indore","state":"Madhya Pradesh","city":"Indore","region":"Central","type":"Other","programs":["Biomedical Engineering (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Instrumentation Engineering (4 Years, Bachelor of Technology)","Electronics and Telecommunication Engineering (4 Years, Bachelor of Technology)","Industrial and Production Engineering (4 Years, Bachelor of Technology)","Information Technology (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)"]},{"college":"Shri Mata Vaishno Devi University, Katra, Jammu & Kashmir","state":"Unknown","city":"Jammu & Kashmir","region":"Unknown","type":"University","programs":["Architecture (5 Years, Bachelor of Architecture)","B.Tech in Mathematics and Computing (4 Years, Bachelor of Technology)","Bio Technology (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Electrical Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Robotics and AI (4 Years, Bachelor of Technology)"]},{"college":"University of Hyderabad","state":"Telangana","city":"Hyderabad","region":"South","type":"University","programs":["Computer Science and Engineering (5 Years, Bachelor and Master of Technology (Dual Degree))","Computer Science and Engineering for DASA-CIWG (5 Years, Bachelor and Master of Technology (Dual Degree))","Materials Engineering (5 Years, Integrated Master of Technology)"]},{"college":"Visvesvaraya National Institute of Technology, Nagpur","state":"Maharashtra","city":"Nagpur","region":"West","type":"NIT","programs":["Architecture (5 Years, Bachelor of Architecture)","Architecture for DASA-CIWG (5 Years, Bachelor of Architecture)","Chemical Engineering (4 Years, Bachelor of Technology)","Chemical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Civil Engineering (4 Years, Bachelor of Technology)","Civil Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Computer Science and Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electrical and Electronics Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Electronics and Communication Engineering for DASA-Non CIWG (4 Years, Bachelor of Technology)","Mechanical Engineering (4 Years, Bachelor of Technology)","Mechanical Engineering for DASA-CIWG (4 Years, Bachelor of Technology)","Metallurgical and Materials Engineering (4 Years, Bachelor of Technology)","Mining Engineering (4 Years, Bachelor of Technology)"]}]</script>
+  <script>
+    // Embedded dataset: array of colleges with programs (no ranks required)
+    const EMBEDDED_COLLEGES = JSON.parse(document.getElementById('embedded-data').textContent);
+    const filters = {
+      region: 'South',
+      state: 'All',
+      type: 'All',
+      city: 'All',
+      regionMulti: ['South'],
+      stateMulti: ['All'],
+      typeMulti: ['All'],
+      cityMulti: ['All'],
+      searchCollege: '',
+      searchProgram: '',
+      searchCity: ''
+    };
+    let regionOptions = [];
+    let stateOptions = [];
+    let typeOptions = [];
+    let cityOptions = [];
+    let regionCounts = {};
+    let stateCounts = {};
+    let typeCounts = {};
+    let cityCounts = {};
+    let totalStats = null;
+    let currentView = 'colleges';
+    const BASE_REGIONS = ['All','North','North East','West','Central','East','South'];
+    const TYPE_COLORS = {
+      'IIT': { bg: '#dbeafe', text: '#1d4ed8', border: '#bfdbfe' },
+      'NIT': { bg: '#fef9c3', text: '#b45309', border: '#fde68a' },
+      'IIIT': { bg: '#ede9fe', text: '#6b21a8', border: '#ddd6fe' },
+      'Engineering Institute': { bg: '#fce7f3', text: '#be185d', border: '#fbcfe8' },
+      'University': { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' },
+      'Other': { bg: '#e2e8f0', text: '#0f172a', border: '#cbd5e1' },
+      'Unknown': { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' }
+    };
+    const stateRegion = {
+      'Andhra Pradesh': 'South',
+      'Arunachal Pradesh': 'North East',
+      'Assam': 'North East',
+      'Bihar': 'East',
+      'Chhattisgarh': 'Central',
+      'Delhi': 'North',
+      'Goa': 'West',
+      'Gujarat': 'West',
+      'Haryana': 'North',
+      'Himachal Pradesh': 'North',
+      'Jammu and Kashmir': 'North',
+      'Jharkhand': 'East',
+      'Karnataka': 'South',
+      'Kerala': 'South',
+      'Madhya Pradesh': 'Central',
+      'Maharashtra': 'West',
+      'Manipur': 'North East',
+      'Meghalaya': 'North East',
+      'Mizoram': 'North East',
+      'Nagaland': 'North East',
+      'Odisha': 'East',
+      'Puducherry': 'South',
+      'Punjab': 'North',
+      'Rajasthan': 'North',
+      'Sikkim': 'North East',
+      'Tamil Nadu': 'South',
+      'Telangana': 'South',
+      'Tripura': 'North East',
+      'Uttar Pradesh': 'North',
+      'Uttarakhand': 'North',
+      'West Bengal': 'East',
+      'Dadra and Nagar Haveli and Daman and Diu': 'West'
+    };
+    const collegeOverrides = {
+      'Birla Institute of Technology, Deoghar Off-Campus': { state: 'Jharkhand', region: 'East', city: 'Deoghar' },
+      'Birla Institute of Technology, Patna Off-Campus': { state: 'Bihar', region: 'East', city: 'Patna' },
+      'Gati Shakti Vishwavidyalaya, Vadodara': { state: 'Gujarat', region: 'West', city: 'Vadodara' },
+      'Gautam Buddha University, Greater Noida': { state: 'Uttar Pradesh', region: 'North', city: 'Greater Noida' },
+      'Gurukula Kangri Vishwavidyalaya, Haridwar': { state: 'Uttarakhand', region: 'North', city: 'Haridwar' },
+      'Indian Institute of Carpet Technology, Bhadohi': { state: 'Uttar Pradesh', region: 'North', city: 'Bhadohi' },
+      'Indian Institute of Engineering Science and Technology, Shibpur': { state: 'West Bengal', region: 'East', city: 'Shibpur' },
+      'Indian Institute of Handloom Technology, Salem': { state: 'Tamil Nadu', region: 'South', city: 'Salem' },
+      'Indian Institute of Information Technology, Vadodara International Campus Diu (IIITVICD)': { state: 'Dadra and Nagar Haveli and Daman and Diu', region: 'West', city: 'Diu' },
+      'Indian Institute of Information Technology(IIIT) Kottayam': { state: 'Kerala', region: 'South', city: 'Kottayam' },
+      'Indian Institute of Information Technology(IIIT), Vadodara, Gujrat': { state: 'Gujarat', region: 'West', city: 'Vadodara' },
+      'Indian Maritime University - Visakhapatnam Campus': { state: 'Andhra Pradesh', region: 'South', city: 'Visakhapatnam' },
+      'Institute of Engineering and Technology, Dr. H. S. Gour University. Sagar (A Central University)': { state: 'Madhya Pradesh', region: 'Central', city: 'Sagar' },
+      'Institute of Infrastructure, Technology, Research and Management-Ahmedabad': { state: 'Gujarat', region: 'West', city: 'Ahmedabad' },
+      'Islamic University of Science and Technology Kashmir': { state: 'Jammu and Kashmir', region: 'North', city: 'Awantipora' },
+      'J.K. Institute of Applied Physics & Technology, Department of Electronics & Communication, University of Allahabad- Allahabad': { state: 'Uttar Pradesh', region: 'North', city: 'Prayagraj' },
+      'Manipal Institute of Technology, Manipal': { state: 'Karnataka', region: 'South', city: 'Manipal' },
+      'National Institute of Electronics and Information Technology, Gorakhpur (UP)': { state: 'Uttar Pradesh', region: 'North', city: 'Gorakhpur' },
+      'National Institute of Food Technology Entrepreneurship and Management, Kundli': { state: 'Haryana', region: 'North', city: 'Kundli' },
+      'National Institute of Technology, Warangal': { state: 'Telangana', region: 'South', city: 'Warangal' },
+      'North-Eastern Hill University, Shillong': { state: 'Meghalaya', region: 'North East', city: 'Shillong' },
+      'Pt. Dwarka Prasad Mishra Indian Institute of Information Technology, Design & Manufacture Jabalpur': { state: 'Madhya Pradesh', region: 'Central', city: 'Jabalpur' },
+      'Rajiv Gandhi National Aviation University, Fursatganj, Amethi (UP)': { state: 'Uttar Pradesh', region: 'North', city: 'Amethi' },
+      'Sant Longowal Institute of Engineering and Technology': { state: 'Punjab', region: 'North', city: 'Longowal' },
+      'School of Engineering, Tezpur University, Napaam, Tezpur': { state: 'Assam', region: 'North East', city: 'Tezpur' },
+      'School of Studies of Engineering and Technology, Guru Ghasidas Vishwavidyalaya, Bilaspur': { state: 'Chhattisgarh', region: 'Central', city: 'Bilaspur' },
+      'Shri Mata Vaishno Devi University, Katra, Jammu & Kashmir': { state: 'Jammu and Kashmir', region: 'North', city: 'Katra' }
+    };
+    let rawRows = applyOverrides(EMBEDDED_COLLEGES);
+    let selectedProgram = null;
+    let programLookup = {};
+    let selectedCollege = null;
+    let collegePrograms = {};
+    let selectedState = null;
+    function shortType(t) {
+      if (t === 'Engineering Institute') return 'EI';
+      return t || '';
+    }
+
+    const els = {
+      region: null,
+      state: null,
+      collegeType: null,
+      city: null,
+      searchCollege: document.getElementById('college-search-input'),
+      searchProgram: document.getElementById('program-search-input'),
+      searchCity: document.getElementById('city-search-input'),
+      reset2: document.getElementById('reset-filters-2'),
+      regionMulti: document.getElementById('region-multi'),
+      stateMulti: document.getElementById('state-multi'),
+      typeMulti: document.getElementById('type-multi'),
+      cityMulti: document.getElementById('city-multi'),
+      typeAll: document.getElementById('type-select-all'),
+      stateAll: document.getElementById('state-select-all'),
+      cityAll: document.getElementById('city-select-all'),
+      statColleges: document.getElementById('stat-colleges'),
+      statPrograms: document.getElementById('stat-programs'),
+      statStates: document.getElementById('stat-states'),
+      statCities: document.getElementById('stat-cities'),
+      statCollegeTypes: document.getElementById('stat-college-types'),
+      topPrograms: document.getElementById('top-programs'),
+      collegeList: document.getElementById('college-list'),
+      sectionPrograms: document.getElementById('section-programs'),
+      sectionColleges: document.getElementById('section-colleges'),
+      sectionStates: document.getElementById('section-states'),
+      cardColleges: document.getElementById('card-colleges'),
+      cardPrograms: document.getElementById('card-programs'),
+      cardStates: document.getElementById('card-states'),
+      stateList: document.getElementById('state-list')
+    };
+    let charts = {};
+
+    init();
+
+    function init() {
+      try {
+        totalStats = computeTotals(rawRows).stats;
+        if (els.dataStatus) els.dataStatus.textContent = `Loaded ${rawRows.length.toLocaleString('en-IN')} colleges`;
+        populateFilters(rawRows);
+        refreshStateOptions();
+        refreshTypeOptions();
+        bindEvents();
+        update();
+      } catch (err) {
+        console.error(err);
+        if (els.dataStatus) els.dataStatus.textContent = 'Failed to initialize data.';
+      }
+    }
+
+    function bindEvents() {
+      // dropdowns removed; all filtering via multiselect chips and search
+      els.searchCollege.addEventListener('input', () => { filters.searchCollege = els.searchCollege.value; refreshTypeOptions(); refreshStateOptions(); update(); });
+      els.searchProgram.addEventListener('input', () => { filters.searchProgram = els.searchProgram.value; refreshTypeOptions(); refreshStateOptions(); update(); });
+      els.searchCity.addEventListener('input', () => { filters.searchCity = els.searchCity.value; refreshTypeOptions(); refreshStateOptions(); update(); });
+      [els.reset2].forEach(btn => btn && btn.addEventListener('click', resetFilters));
+      if (els.typeAll) els.typeAll.addEventListener('change', () => { filters.typeMulti = ['All']; update(); });
+      if (els.stateAll) els.stateAll.addEventListener('change', () => { filters.stateMulti = ['All']; update(); });
+      if (els.cityAll) els.cityAll.addEventListener('change', () => { filters.cityMulti = ['All']; update(); });
+      ['regionMulti','stateMulti','typeMulti','cityMulti'].forEach(key => {
+        const el = els[key];
+        if (!el) return;
+        el.addEventListener('click', (e) => {
+          const val = e.target?.closest('button[data-value]')?.dataset?.value;
+          if (!val) return;
+          const target = filters[key.replace('Multi','') + 'Multi'];
+          const isAllClick = val === 'All';
+          if ((key === 'regionMulti' || key === 'stateMulti' || key === 'typeMulti' || key === 'cityMulti') && isAllClick) {
+            if (target.includes('All')) {
+              target.splice(target.indexOf('All'), 1);
+            } else {
+              target.length = 0;
+              target.push('All');
+            }
+          } else {
+            const allIdx = target.indexOf('All');
+            if (allIdx >= 0) target.splice(allIdx, 1);
+            const idx = target.indexOf(val);
+            if (idx >= 0) target.splice(idx, 1); else target.push(val);
+          }
+          if (key === 'regionMulti') filters.region = 'All';
+          update();
+        });
+      });
+
+      if (els.cardColleges) {
+        els.cardColleges.addEventListener('click', () => { currentView = 'colleges'; renderViewToggle(); });
+      }
+      if (els.cardPrograms) {
+        els.cardPrograms.addEventListener('click', () => { currentView = 'programs'; renderViewToggle(); });
+      }
+      if (els.cardStates) {
+        els.cardStates.addEventListener('click', () => { currentView = 'states'; renderViewToggle(); });
+      }
+    }
+
+    function resetFilters() {
+      filters.region = filters.state = filters.type = 'All';
+      filters.region = 'South';
+      filters.regionMulti = ['South'];
+      filters.stateMulti = ['All'];
+      filters.typeMulti = ['All'];
+      filters.searchCollege = '';
+      filters.searchProgram = '';
+      filters.searchCity = '';
+      if (els.region) els.region.value = 'All';
+      if (els.state) els.state.value = 'All';
+      if (els.collegeType) els.collegeType.value = 'All';
+      filters.city = 'All';
+      filters.cityMulti = ['All'];
+      els.searchCollege.value = '';
+      els.searchProgram.value = '';
+      els.searchCity.value = '';
+      currentView = 'colleges';
+      refreshTypeOptions();
+      refreshStateOptions();
+      update();
+      renderViewToggle();
+    }
+
+    function populateFilters(rows) {
+      const unique = (field) => Array.from(new Set(rows.map(r => (r[field] || '').trim()).filter(Boolean))).sort();
+      regionOptions = unique('region');
+      stateOptions = unique('state');
+      typeOptions = unique('type');
+    }
+
+    function update() {
+      ensureAllFallback();
+      refreshTypeOptions();
+      refreshStateOptions();
+      refreshCityOptions();
+      computeMultiData();
+      renderMultiFilters();
+      const filteredRows = applyOverrides(rawRows).filter(passesFilters);
+      const stats = computeStats(filteredRows);
+      programLookup = stats.programLookup;
+      if (!selectedProgram || !programLookup[selectedProgram]) {
+        selectedProgram = stats.programData[0]?.program || null;
+      }
+      collegePrograms = stats.collegePrograms;
+      if (!selectedCollege || !collegePrograms[selectedCollege]) {
+        selectedCollege = stats.collegeData[0]?.college || null;
+      }
+      renderStats(stats);
+      renderTopPrograms(stats.programData, programLookup);
+      if (!selectedState || !stats.stateData.some(s => s.state === selectedState)) {
+        selectedState = stats.stateData[0]?.state || null;
+      }
+      renderStatesDirectory(stats.stateData);
+      renderColleges(stats.collegeData);
+      renderViewToggle();
+    }
+
+    function ensureAllFallback() {
+      if (!filters.regionMulti.length) filters.regionMulti = ['All'];
+      if (!filters.stateMulti.length) filters.stateMulti = ['All'];
+      if (!filters.typeMulti.length) filters.typeMulti = ['All'];
+      if (!filters.cityMulti.length) filters.cityMulti = ['All'];
+    }
+
+    function renderViewToggle() {
+      const showPrograms = currentView === 'programs';
+      const showStates = currentView === 'states';
+      if (els.sectionPrograms) els.sectionPrograms.classList.toggle('hidden', !showPrograms);
+      if (els.sectionStates) els.sectionStates.classList.toggle('hidden', !showStates);
+      if (els.sectionColleges) els.sectionColleges.classList.toggle('hidden', showPrograms || showStates);
+      const activate = (card, active) => card && card.classList.toggle('stat-card-active', active);
+      activate(els.cardColleges, currentView === 'colleges');
+      activate(els.cardPrograms, currentView === 'programs');
+      activate(els.cardStates, currentView === 'states');
+    }
+
+    function passesFilters(row) {
+      const region = (row.region || '').trim();
+      const state = (row.state || '').trim();
+      const city = (row.city || '').trim();
+      const type = (row.type || '').trim();
+      const regionMulti = filters.regionMulti.includes('All') ? [] : filters.regionMulti;
+      const cityMulti = filters.cityMulti.includes('All') ? [] : filters.cityMulti;
+      const stateMulti = filters.stateMulti.includes('All') ? [] : filters.stateMulti;
+      const typeMulti = filters.typeMulti.includes('All') ? [] : filters.typeMulti;
+      if (regionMulti.length ? !regionMulti.includes(region) : (filters.region !== 'All' && region !== filters.region)) return false;
+      if (stateMulti.length ? !stateMulti.includes(state) : (filters.state !== 'All' && state !== filters.state)) return false;
+      if (cityMulti.length ? !cityMulti.includes(city) : (filters.city !== 'All' && city !== filters.city)) return false;
+      if (typeMulti.length ? !typeMulti.includes(type) : (filters.type !== 'All' && type !== filters.type)) return false;
+      if (filters.searchCollege) {
+        const q = filters.searchCollege.toLowerCase();
+        const college = (row.college || '').toLowerCase();
+        if (!college.includes(q)) return false;
+      }
+      if (filters.searchProgram) {
+        const q = filters.searchProgram.toLowerCase();
+        const programHit = (row.programs || []).some(p => p.toLowerCase().includes(q));
+        if (!programHit) return false;
+      }
+      if (filters.searchCity) {
+        const q = filters.searchCity.toLowerCase();
+        const cityStr = (row.city || '').toLowerCase();
+        if (!cityStr.includes(q)) return false;
+      }
+      return true;
+    }
+
+    function passesFiltersWithSkip(row, skipFields = []) {
+      if (!Array.isArray(skipFields)) skipFields = [skipFields];
+      const region = (row.region || '').trim();
+      const state = (row.state || '').trim();
+      const city = (row.city || '').trim();
+      const type = (row.type || '').trim();
+      const regionMulti = filters.regionMulti.includes('All') ? [] : filters.regionMulti;
+      const cityMulti = filters.cityMulti.includes('All') ? [] : filters.cityMulti;
+      const stateMulti = filters.stateMulti.includes('All') ? [] : filters.stateMulti;
+      const typeMulti = filters.typeMulti.includes('All') ? [] : filters.typeMulti;
+      if (!skipFields.includes('region') && (regionMulti.length ? !regionMulti.includes(region) : (filters.region !== 'All' && region !== filters.region))) return false;
+      if (!skipFields.includes('state') && (stateMulti.length ? !stateMulti.includes(state) : (filters.state !== 'All' && state !== filters.state))) return false;
+      if (!skipFields.includes('city') && (cityMulti.length ? !cityMulti.includes(city) : (filters.city !== 'All' && city !== filters.city))) return false;
+      if (!skipFields.includes('type') && (typeMulti.length ? !typeMulti.includes(type) : (filters.type !== 'All' && type !== filters.type))) return false;
+      if (!skipFields.includes('searchCollege') && filters.searchCollege) {
+        const q = filters.searchCollege.toLowerCase();
+        const college = (row.college || '').toLowerCase();
+        if (!college.includes(q)) return false;
+      }
+      if (!skipFields.includes('searchProgram') && filters.searchProgram) {
+        const q = filters.searchProgram.toLowerCase();
+        const programHit = (row.programs || []).some(p => p.toLowerCase().includes(q));
+        if (!programHit) return false;
+      }
+      if (!skipFields.includes('searchCity') && filters.searchCity) {
+        const q = filters.searchCity.toLowerCase();
+        const cityStr = (row.city || '').toLowerCase();
+        if (!cityStr.includes(q)) return false;
+      }
+      return true;
+    }
+
+    function refreshStateOptions() {
+      const rows = applyOverrides(rawRows).filter(r => passesFiltersWithSkip(r, ['state']));
+      const states = Array.from(new Set(rows.map(r => (r.state || '').trim()).filter(Boolean))).sort();
+      stateOptions = states;
+    }
+
+    function refreshCityOptions() {
+      const rows = applyOverrides(rawRows).filter(r => passesFiltersWithSkip(r, ['city']));
+      const cities = Array.from(new Set(rows.map(r => (r.city || '').trim()).filter(Boolean))).sort();
+      cityOptions = cities;
+    }
+
+    function refreshTypeOptions() {
+      const rows = applyOverrides(rawRows).filter(r => passesFiltersWithSkip(r, ['type']));
+      const types = Array.from(new Set(rows.map(r => (r.type || '').trim()).filter(Boolean))).sort();
+      typeOptions = types;
+    }
+
+    function computeMultiData() {
+      regionCounts = {};
+      stateCounts = {};
+      typeCounts = {};
+      cityCounts = {};
+      const rows = applyOverrides(rawRows);
+      const bump = (map, key, fallback = 'Unknown') => {
+        const k = key && key.trim() ? key : fallback;
+        map[k] = (map[k] || 0) + 1;
+      };
+      rows.forEach(row => {
+        if (passesFiltersWithSkip(row, 'region')) bump(regionCounts, row.region, 'Unknown');
+        if (passesFiltersWithSkip(row, 'state')) bump(stateCounts, row.state, 'Unknown');
+        if (passesFiltersWithSkip(row, 'city')) bump(cityCounts, row.city, 'Unknown');
+        if (passesFiltersWithSkip(row, 'type')) bump(typeCounts, row.type, 'Other');
+      });
+      regionCounts['All'] = rows.filter(r => passesFiltersWithSkip(r, 'region')).length;
+      stateCounts['All'] = rows.filter(r => passesFiltersWithSkip(r, 'state')).length;
+      cityCounts['All'] = rows.filter(r => passesFiltersWithSkip(r, 'city')).length;
+      typeCounts['All'] = rows.filter(r => passesFiltersWithSkip(r, 'type')).length;
+      BASE_REGIONS.forEach(r => { if (regionCounts[r] === undefined) regionCounts[r] = 0; });
+      const build = (counts, selected = []) => {
+        const merged = new Set([...Object.keys(counts), ...selected]);
+        return Array.from(merged).sort((a, b) => {
+          const diff = (counts[b] || 0) - (counts[a] || 0);
+          if (diff !== 0) return diff;
+          return (a || '').localeCompare(b || '');
+        });
+      };
+      regionOptions = [...BASE_REGIONS];
+      stateOptions = build(stateCounts, filters.stateMulti);
+      cityOptions = build(cityCounts, filters.cityMulti);
+      typeOptions = build(typeCounts, filters.typeMulti);
+      const pinAllFirst = (arr) => arr.includes('All') ? ['All', ...arr.filter(v => v !== 'All')] : arr;
+      regionOptions = pinAllFirst(regionOptions);
+      stateOptions = pinAllFirst(stateOptions);
+      cityOptions = pinAllFirst(cityOptions);
+      typeOptions = pinAllFirst(typeOptions);
+    }
+
+    function renderMultiFilters() {
+      const withoutAll = (arr) => arr.filter(v => v !== 'All');
+      const selectedAllOrFiltered = (options, sel) => sel.includes('All') ? options.slice() : sel.filter(v => v !== 'All');
+      const typeOpts = withoutAll(typeOptions);
+      const stateOpts = withoutAll(stateOptions);
+      const cityOpts = withoutAll(cityOptions);
+      const typeSel = selectedAllOrFiltered(typeOpts, filters.typeMulti);
+      const stateSel = selectedAllOrFiltered(stateOpts, filters.stateMulti);
+      const citySel = selectedAllOrFiltered(cityOpts, filters.cityMulti);
+      if (els.typeAll) els.typeAll.checked = filters.typeMulti.includes('All');
+      if (els.stateAll) els.stateAll.checked = filters.stateMulti.includes('All');
+      if (els.cityAll) els.cityAll.checked = filters.cityMulti.includes('All');
+      renderRegionGrid();
+      renderBarList(els.typeMulti, typeOpts, typeSel, typeCounts, ['#e2e8f0', '#cbd5e1'], ['#fffd8d', '#ffbf00'], 'bar-filter-active-blue');
+      renderBarList(els.stateMulti, stateOpts, stateSel, stateCounts, ['#e2e8f0', '#cbd5e1'], ['#d8f9ff', '#3cdfff'], 'bar-filter-active-blue', 'chart-bar');
+      renderBarList(els.cityMulti, cityOpts, citySel, cityCounts, ['#e2e8f0', '#cbd5e1'], ['#FFE9EF', '#fc5a8d'], 'bar-filter-active-blue');
+    }
+
+    function renderRegionGrid() {
+      const container = els.regionMulti;
+      if (!container) return;
+      const displayRegion = (name) => name === 'North East' ? 'NE' : name;
+      const layout = [
+        ['All', 'North', 'North East'],
+        ['West', 'Central', 'East'],
+        [null, 'South', null]
+      ];
+      const toCell = (name) => {
+        if (!name) return '<div></div>';
+        const active = filters.regionMulti.includes(name);
+        const count = regionCounts?.[name] ?? 0;
+        return `<button data-value="${name}" class="region-btn ${active ? 'region-btn-active' : ''}">
+          <span>${displayRegion(name)}</span>
+          <span class="region-count">${count}</span>
+        </button>`;
+      };
+      container.innerHTML = layout.map(row => row.map(toCell).join('')).join('');
+    }
+
+    function computeTotals(rows) {
+      const programMap = new Map();
+      const stateMap = new Map();
+      const citySet = new Set();
+      const typeSet = new Set();
+      rows.forEach(r => {
+        const college = r.college || 'Unknown college';
+        const state = r.state || 'Unknown';
+        const city = r.city || 'Unknown';
+        const region = r.region || 'Unknown';
+        const programs = Array.isArray(r.programs) ? r.programs : [];
+        const type = r.type || 'Other';
+        programs.forEach(p => {
+          if (!programMap.has(p)) programMap.set(p, new Set());
+          programMap.get(p).add(college);
+        });
+        if (!stateMap.has(state)) stateMap.set(state, { state, region, colleges: new Set(), cities: new Set() });
+        stateMap.get(state).colleges.add(college);
+        stateMap.get(state).cities.add(city);
+        citySet.add(`${city}__${state}`);
+        typeSet.add(type);
+      });
+      return {
+        stats: {
+          colleges: rows.length,
+          programs: programMap.size,
+          states: stateMap.size,
+          cities: citySet.size,
+          collegeTypes: typeSet.size
+        }
+      };
+    }
+
+    function renderBarList(container, options, selected, counts, gradient = ['#fecdd3', '#fde68a'], activeGradient = null, activeClass = '', extraClass = '') {
+      if (!container) return;
+      const max = Math.max(...options.map(opt => counts?.[opt] || 0), 1);
+      const [from, to] = gradient;
+      const activeGrad = activeGradient || gradient;
+      container.innerHTML = options.map(opt => {
+        const active = selected.includes(opt);
+        const count = counts?.[opt] ?? 0;
+        const pct = Math.max(10, Math.round((count / max) * 100));
+        const label = opt || 'Unknown';
+        const [gFrom, gTo] = active ? activeGrad : gradient;
+        return `
+          <button data-value="${opt}" class="bar-filter ${extraClass} ${active ? `bar-filter-active ${activeClass}` : ''}">
+            <span class="bar-filter-fill" style="width:${pct}%;background:linear-gradient(90deg, ${gFrom}, ${gTo});"></span>
+            <span class="bar-filter-label">${label}</span>
+            <span class="bar-filter-count">${count}</span>
+          </button>
+        `;
+      }).join('') || '<span class="text-slate-500 text-xs">No options</span>';
+    }
+
+    function applyOverrides(list) {
+      return list.map(item => {
+        const c = { ...item };
+        const override = collegeOverrides[c.college];
+        if (override) Object.assign(c, override);
+        if ((!override) && ( (!c.state || c.state.toLowerCase() === 'unknown') || (!c.region || c.region.toLowerCase() === 'unknown'))) {
+          const found = Object.entries(collegeOverrides).find(([name]) => (c.college || '').toLowerCase().includes(name.toLowerCase()));
+          if (found) Object.assign(c, found[1]);
+        }
+        if ((!c.region || c.region.toLowerCase() === 'unknown') && c.state) {
+          const guess = stateRegion[c.state];
+          if (guess) c.region = guess;
+        }
+        return c;
+      });
+    }
+
+    function computeStats(rows) {
+      const programMap = new Map();
+      const stateMap = new Map();
+      const citySet = new Set();
+      const typeCounts = {};
+      const regionCountsLocal = {};
+      const collegeProgramSets = {};
+
+      rows.forEach(r => {
+        const college = r.college || 'Unknown college';
+        const state = r.state || 'Unknown';
+        const region = r.region || 'Unknown';
+        const city = r.city || 'Unknown';
+        const type = r.type || 'Other';
+        const programsFull = Array.isArray(r.programs) ? r.programs : [];
+        const programs = filters.searchProgram
+          ? programsFull.filter(p => p.toLowerCase().includes(filters.searchProgram.toLowerCase()))
+          : programsFull;
+
+        typeCounts[type] = (typeCounts[type] || 0) + 1;
+        regionCountsLocal[region] = (regionCountsLocal[region] || 0) + 1;
+        programs.forEach(p => {
+          if (!programMap.has(p)) programMap.set(p, new Set());
+          programMap.get(p).add(college);
+        });
+
+        if (!stateMap.has(state)) stateMap.set(state, { state, region, colleges: new Set(), cities: new Set() });
+        stateMap.get(state).colleges.add(college);
+        stateMap.get(state).cities.add(city);
+        citySet.add(`${city}__${state}`);
+        if (!collegeProgramSets[college]) collegeProgramSets[college] = new Set();
+        programs.forEach(p => collegeProgramSets[college].add(p));
+      });
+
+      return {
+        collegeData: rows.map(r => {
+          const programsFull = Array.isArray(r.programs) ? r.programs : [];
+          const programs = filters.searchProgram
+            ? programsFull.filter(p => p.toLowerCase().includes(filters.searchProgram.toLowerCase()))
+            : programsFull;
+          return { ...r, programCount: programs.length };
+        }),
+        programData: Array.from(programMap.entries()).map(([program, colleges]) => ({ program, colleges: colleges.size })),
+        stateData: Array.from(stateMap.values()).map(s => ({
+          ...s,
+          collegeCount: s.colleges.size,
+          cityCount: s.cities.size,
+          cityList: Array.from(s.cities).sort()
+        })),
+        stats: {
+          colleges: rows.length,
+          programs: programMap.size,
+          states: stateMap.size,
+          cities: citySet.size,
+          collegeTypes: Object.keys(typeCounts).length
+        },
+        typeCounts,
+        regionCounts: regionCountsLocal,
+        programLookup: Object.fromEntries(Array.from(programMap.entries()).map(([program, colleges]) => [program, Array.from(colleges).sort()])),
+        collegePrograms: Object.fromEntries(Object.entries(collegeProgramSets).map(([college, set]) => [college, Array.from(set).sort()]))
+      };
+    }
+
+    function renderStats(stats) {
+      const totals = totalStats || stats.stats;
+      if (els.statCollegeTypes) {
+      const priority = ['IIT', 'NIT', 'IIIT'];
+      const entries = Object.entries(stats.typeCounts || {}).sort((a, b) => {
+        const pa = priority.indexOf(a[0]);
+        const pb = priority.indexOf(b[0]);
+        if (pa !== -1 && pb !== -1) return pa - pb;
+        if (pa !== -1) return -1;
+        if (pb !== -1) return 1;
+        return a[0].localeCompare(b[0]);
+      });
+        els.statCollegeTypes.innerHTML = entries.length
+          ? entries.map(([type, count]) => {
+              const { bg, text, border } = TYPE_COLORS[type] || TYPE_COLORS.Other;
+              return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold" style="background:${bg};color:${text};border:1px solid ${border};">${shortType(type)} <span style="color:${text};" class="opacity-80">${count.toLocaleString('en-IN')}</span></span>`;
+            }).join('')
+          : '<span class="text-slate-500 text-xs">No college types</span>';
+      }
+      els.statColleges.textContent = `${stats.stats.colleges.toLocaleString('en-IN')} / ${totals.colleges.toLocaleString('en-IN')}`;
+      els.statPrograms.textContent = `${stats.stats.programs.toLocaleString('en-IN')} / ${totals.programs.toLocaleString('en-IN')}`;
+      els.statStates.textContent = `${stats.stats.states.toLocaleString('en-IN')} / ${totals.states.toLocaleString('en-IN')}`;
+      els.statCities.textContent = `${stats.stats.cities.toLocaleString('en-IN')} / ${totals.cities.toLocaleString('en-IN')}`;
+    }
+
+
+    function renderTopPrograms(programData, lookup) {
+      const container = els.topPrograms;
+      const items = programData
+        .filter(p => !filters.searchProgram || (p.program || '').toLowerCase().includes(filters.searchProgram.toLowerCase()))
+        .sort((a, b) => (a.program || '').localeCompare(b.program || ''));
+      if (!items.length) {
+        els.topPrograms.innerHTML = '<div class="text-slate-500 text-sm">No branches in current filters.</div>';
+        return;
+      }
+      els.topPrograms.innerHTML = items.map((p, idx) => {
+        const isSelected = p.program === selectedProgram;
+        const colleges = lookup[p.program] || [];
+        return `
+          <div data-program="${p.program.replace(/"/g, '&quot;')}" class="rounded-xl border ${isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'} p-3 shadow-sm hover:border-red-200 cursor-pointer">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2 font-semibold text-slate-900 leading-snug">
+                <span>${p.program}</span>
+                <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=branch&value=${encodeURIComponent(p.program)}" target="_blank">Rubric ↗</a>
+              </div>
+              <div class="flex items-center gap-2 text-sm font-bold text-red-600">
+                <span>${p.colleges.toLocaleString('en-IN')}</span>
+                <span class="text-xs text-slate-500">${isSelected ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            ${isSelected ? `
+              <div class="mt-2 flex flex-wrap gap-2 max-h-48 overflow-auto pr-1">
+                ${colleges.map(c => `<span class="inline-block px-2 py-1 rounded-lg bg-white border border-red-100 text-sm text-red-700">${c}</span>`).join('') || '<span class="text-slate-500 text-sm">No colleges match current filters.</span>'}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+      els.topPrograms.querySelectorAll('[data-program]').forEach(card => {
+        card.addEventListener('click', () => {
+          const program = card.getAttribute('data-program');
+          selectedProgram = selectedProgram === program ? null : program;
+          renderTopPrograms(programData, lookup);
+        });
+      });
+    }
+
+    function renderStatesDirectory(stateData) {
+      const listEl = els.stateList;
+      if (!listEl) return;
+      const items = (stateData || []).slice().sort((a, b) => (a.state || '').localeCompare(b.state || ''));
+      if (!selectedState || !items.some(s => s.state === selectedState)) {
+        selectedState = items[0]?.state || null;
+      }
+      const cards = [];
+      if (!items.length) {
+        cards.push('<div class="text-slate-500 text-sm px-2 py-1">No states match current filters/search.</div>');
+      } else {
+        items.forEach(s => {
+          const isSelected = s.state === selectedState;
+          const cities = Array.isArray(s.cityList) ? s.cityList : [];
+          cards.push(`
+            <div data-state="${s.state.replace(/"/g, '&quot;')}" class="rounded-xl border ${isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'} p-3 shadow-sm hover:border-red-200 cursor-pointer">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="font-semibold text-slate-900 ${isSelected ? 'text-red-700' : ''}">${s.state}</div>
+                  <div class="text-xs text-slate-500">${s.region || 'Unknown'} • ${s.collegeCount.toLocaleString('en-IN')} colleges • ${s.cityCount.toLocaleString('en-IN')} cities</div>
+                </div>
+                <div class="flex items-center gap-2 text-sm font-bold text-red-600">
+                  <span>${s.cityCount.toLocaleString('en-IN')}</span>
+                  <span class="text-xs text-slate-500">${isSelected ? '▲' : '▼'}</span>
+                </div>
+              </div>
+              ${isSelected ? `
+                <div class="mt-2 flex flex-wrap gap-2 max-h-48 overflow-auto pr-1">
+                  ${cities.map(c => `<span class="inline-block px-2 py-1 rounded-lg bg-white border border-red-100 text-sm text-red-700">${c}</span>`).join('') || '<span class="text-slate-500 text-sm">No cities listed.</span>'}
+                </div>
+              ` : ''}
+            </div>
+          `);
+        });
+      }
+      listEl.innerHTML = cards.join('');
+      listEl.querySelectorAll('[data-state]').forEach(card => {
+        card.addEventListener('click', () => {
+          const state = card.getAttribute('data-state');
+          selectedState = selectedState === state ? null : state;
+          renderStatesDirectory(stateData);
+        });
+      });
+    }
+
+    function renderColleges(collegeData) {
+      const listEl = els.collegeList;
+      if (!listEl) return;
+      const priority = ['IIT', 'NIT', 'IIIT'];
+      const typeOrder = (t) => {
+        const idx = priority.indexOf(t);
+        return idx === -1 ? priority.length + (t || 'ZZZ').localeCompare(t || 'ZZZ') : idx;
+      };
+      const items = collegeData
+        .sort((a, b) => {
+          const tDiff = typeOrder(a.type) - typeOrder(b.type);
+          if (tDiff !== 0) return tDiff;
+          const stateDiff = (a.state || '').localeCompare(b.state || '');
+          if (stateDiff !== 0) return stateDiff;
+          return (a.college || '').localeCompare(b.college || '');
+        })
+        .slice(0, 400);
+      const cards = [];
+      if (!items.length) {
+        cards.push('<div class="text-slate-500 text-sm px-2 py-1">No colleges match current filters/search.</div>');
+      } else {
+        items.forEach(c => {
+          const isSelected = c.college === selectedCollege;
+          const programs = collegePrograms[c.college] || [];
+          const typeColor = TYPE_COLORS[c.type] || TYPE_COLORS.Other;
+          cards.push(`
+            <div data-college="${c.college.replace(/"/g, '&quot;')}" class="rounded-xl border ${isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'} p-3 shadow-sm hover:border-red-200 cursor-pointer">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2 font-semibold text-slate-900 ${isSelected ? 'text-red-700' : ''}">
+                    <span>${c.college}</span>
+                    <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=college&value=${encodeURIComponent(c.college)}" target="_blank">Rubric ↗</a>
+                  </div>
+                  <div class="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+                    <span>${c.city}, ${c.state}</span>
+                    <span>• ${c.region}</span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[0.7rem] font-semibold" style="background:${typeColor.bg};color:${typeColor.text};border:1px solid ${typeColor.border};">${shortType(c.type)}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm font-bold text-red-600">
+                  <span>${c.programCount.toLocaleString('en-IN')}</span>
+                  <span class="text-xs text-slate-500">${isSelected ? '▲' : '▼'}</span>
+                </div>
+              </div>
+              ${isSelected ? `
+                <div class="mt-2 flex flex-wrap gap-2 max-h-48 overflow-auto pr-1">
+                  ${programs.map(p => `<span class="inline-block px-2 py-1 rounded-lg bg-white border border-red-100 text-sm text-red-700">${p}</span>`).join('') || '<span class="text-slate-500 text-sm">No branches match current filters.</span>'}
+                </div>
+              ` : ''}
+            </div>
+          `);
+        });
+      }
+      listEl.innerHTML = cards.join('');
+      listEl.querySelectorAll('[data-college]').forEach(card => {
+        card.addEventListener('click', () => {
+          const college = card.getAttribute('data-college');
+          selectedCollege = selectedCollege === college ? null : college;
+          renderColleges(collegeData);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
