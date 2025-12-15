@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>College & Branch Atlas | JoSAA + CSAB 2025</title>
+  <title>College & Branch - JoSAA Ranks & Rounds - Atlas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -214,7 +214,7 @@
   <div class="max-w-screen-2xl mx-auto px-6 py-6 space-y-4">
 
     <div>
-      <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">College & Branch Atlas</h1>
+      <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">College & Branch - JoSAA Ranks & Rounds - Atlas<sup class="text-base font-semibold text-slate-600 align-super">2025</sup></h1>
       <p class="text-slate-600 mt-2">Built from JoSAA 2025 counselling data, this atlas spotlights every participating college and branch, where they sit on the map, and how they stack up by type. Use it to explore geography, competitiveness, and the breadth of choices across rounds—an at-a-glance overview of the landscape before diving into detailed ranks and rounds.</p>
     </div>
 
@@ -943,9 +943,9 @@
         return `
           <div data-program="${p.program.replace(/"/g, '&quot;')}" class="rounded-xl border ${isSelected ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'} p-3 shadow-sm hover:border-red-200 cursor-pointer">
             <div class="flex items-center justify-between gap-3">
-              <div class="flex flex-wrap items-center gap-2 font-semibold text-slate-900 leading-snug">
+                <div class="flex flex-wrap items-center gap-2 font-semibold text-slate-900 leading-snug">
                 <span>${p.program}</span>
-                <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=branch&value=${encodeURIComponent(p.program)}" target="_blank">Rubric ↗</a>
+                <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=branch&value=${encodeURIComponent(p.program)}" target="_blank">Ranks &amp; Rounds ↗</a>
               </div>
               <div class="flex items-center gap-2 text-sm font-bold text-red-600">
                 <span>${p.colleges.toLocaleString('en-IN')}</span>
@@ -1045,7 +1045,7 @@
                 <div>
                   <div class="flex flex-wrap items-center gap-2 font-semibold text-slate-900 ${isSelected ? 'text-red-700' : ''}">
                     <span>${c.college}</span>
-                    <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=college&value=${encodeURIComponent(c.college)}" target="_blank">Rubric ↗</a>
+                    <a class="text-xs font-semibold text-blue-600 hover:underline" href="rounds_view.html?type=college&value=${encodeURIComponent(c.college)}" target="_blank">Ranks &amp; Rounds ↗</a>
                   </div>
                   <div class="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
                     <span>${c.city}, ${c.state}</span>
